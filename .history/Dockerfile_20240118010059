@@ -1,0 +1,53 @@
+# Base stage
+FROM vcpkg:local AS vcpkg
+
+ENV project=meeting-sdk-linux-sample
+ENV cwd=/tmp/$project
+
+# Install additional dependencies
+RUN apt-get update \
+    && apt-get install -y \
+        make \
+        # Add any other dependencies you might need
+
+# Install ALSA
+RUN apt-get install -y libasound2 libasound2-plugins alsa alsa-utils alsa-oss
+
+# Install Pulseaudio
+RUN apt-get install -y pulseaudio pulseaudio-utils
+
+## Install Tini
+ENV TINI_VERSION v0.19.0
+ADD https://github.com/krallin/tini/releases/download/${TINI_VERSION}/tini /tini
+RUN chmod +x /tini
+
+FROM base AS deps
+
+WORKDIR /opt
+RUN git clone --depth 1 https://github.com/Microsoft/vcpkg.git \
+    && ./vcpkg/bootstrap-vcpkg.sh -disableMetrics \
+    && ln -s /opt/vcpkg/vcpkg /usr/local/bin/vcpkg \
+    && vcpkg install vcpkg-cmake POCO
+
+FROM deps AS build
+
+WORKDIR $cwd
+
+# Copy project source code
+COPY . .
+
+# Copy vcpkg toolchain file
+COPY --from=vcpkg /opt/vcpkg/scripts/buildsystems/vcpkg.cmake /tmp/vcpkg.cmake
+
+# Set necessary environment variables
+ENV CMAKE_TOOLCHAIN_FILE=/tmp/vcpkg.cmake
+ENV VCPKG_ROOT=/opt/vcpkg
+
+# Explicitly set CMAKE_MAKE_PROGRAM before running CMake
+RUN export CMAKE_MAKE_PROGRAM=/opt/vcpkg/installed/x64-linux/bin/make && cmake .
+
+# Build the project
+RUN make
+
+# Set the entry point
+ENTRYPOINT ["/tini", "--", "./bin/entry.sh"]

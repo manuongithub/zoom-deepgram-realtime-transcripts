@@ -1,0 +1,25 @@
+FROM ubuntu:22.04
+
+ENV project=vcpkg
+ENV cwd=/tmp/$project
+
+# Install necessary dependencies
+RUN apt-get update \
+    && apt-get install -y \
+        build-essential \
+        cmake \
+        curl \
+        git \
+        tar \
+        unzip \
+        zip
+
+# Clone vcpkg repository
+RUN git clone --depth 1 https://github.com/Microsoft/vcpkg.git $cwd \
+    && $cwd/bootstrap-vcpkg.sh -disableMetrics
+
+# Set vcpkg-root directory
+ENV VCPKG_ROOT /opt/vcpkg
+
+# Set the entry point
+ENTRYPOINT ["/bin/bash"]
