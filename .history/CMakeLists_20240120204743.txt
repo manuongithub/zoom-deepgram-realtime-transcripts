@@ -35,8 +35,8 @@ add_executable(zoomsdk
     src/main.cpp
     src/Zoom.cpp
     src/Zoom.h
-    src/raw-stream/DeepgramWSHelper.cpp  
-    src/raw-stream/DeepgramWSHelper.h    
+    src/raw-record/DeepgramWSHelper.cpp  # Updated file name
+    src/raw-record/DeepgramWSHelper.h    # Updated file name
     src/Config.cpp
     src/Config.h
     src/util/Singleton.h
@@ -49,10 +49,10 @@ add_executable(zoomsdk
     src/events/MeetingReminderEvent.h
     src/events/MeetingRecordingCtrlEvent.cpp
     src/events/MeetingRecordingCtrlEvent.h
-    src/raw-stream/ZoomSDKAudioRawDataDelegate.cpp
-    src/raw-stream/ZoomSDKAudioRawDataDelegate.h
-    src/raw-stream/ZoomSDKRendererDelegate.cpp
-    src/raw-stream/ZoomSDKRendererDelegate.h
+    src/raw-record/ZoomSDKAudioRawDataDelegate.cpp
+    src/raw-record/ZoomSDKAudioRawDataDelegate.h
+    src/raw-record/ZoomSDKRendererDelegate.cpp
+    src/raw-record/ZoomSDKRendererDelegate.h
 )
 
 target_include_directories(zoomsdk PRIVATE ${Poco_INCLUDE_DIRS})

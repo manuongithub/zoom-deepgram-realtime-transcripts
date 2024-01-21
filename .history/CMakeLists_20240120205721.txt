@@ -35,8 +35,8 @@ add_executable(zoomsdk
     src/main.cpp
     src/Zoom.cpp
     src/Zoom.h
-    src/raw-stream/DeepgramWSHelper.cpp  
-    src/raw-stream/DeepgramWSHelper.h    
+    src/raw-stream/DeepgramWSHelper.cpp  # Updated file name
+    src/raw-stream/DeepgramWSHelper.h    # Updated file name
     src/Config.cpp
     src/Config.h
     src/util/Singleton.h
