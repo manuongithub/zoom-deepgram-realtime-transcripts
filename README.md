@@ -4,7 +4,10 @@ My fork of https://github.com/zoom/meetingsdk-headless-linux-sample incorporates
 
 
 
-Uploading dzb-zfje-ydy (2024-01-22 15_16 GMT-8).mp4…
+
+https://github.com/manuongithub/zoom-deepgram-realtime-transcripts/assets/52586020/074a9679-8326-4da0-a0e7-fb447bf5106f
+
+
 
 
 
