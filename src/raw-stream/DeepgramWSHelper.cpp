@@ -1,5 +1,6 @@
 // DeepgramWSHelper.cpp
 #include "DeepgramWSHelper.h"
+#include "DeepgramJsonParser.h"
 #include <Poco/Net/SocketReactor.h>
 #include <Poco/Net/SocketNotification.h>
 #include <Poco/RunnableAdapter.h>
@@ -9,12 +10,13 @@
 #include <Poco/JSON/Parser.h>
 #include <Poco/JSON/Object.h>
 
-DeepgramWSHelper::DeepgramWSHelper() : uri(nullptr), m_psock(nullptr), container(nullptr), reactor(nullptr) {
+
+DeepgramWSHelper::DeepgramWSHelper() : uri(nullptr), m_psock(nullptr), reactor(nullptr) {
     // Default constructor
 }
 
 DeepgramWSHelper::DeepgramWSHelper(std::string wsEndPoint, const std::map<std::string, std::string>& extraHeaders, const std::string& encoding, int sampleRate, int channels)
-    : uri(nullptr), m_psock(nullptr), container(nullptr), reactor(nullptr) {
+    : uri(nullptr), m_psock(nullptr), reactor(nullptr) {
     initialize(wsEndPoint, extraHeaders, encoding, sampleRate, channels);
 }
 
@@ -51,6 +53,13 @@ void DeepgramWSHelper::initialize(std::string wsEndPoint, const std::map<std::st
 
         // Check if the socket is open
         if (m_psock->impl() && m_psock->impl()->initialized()) {
+            // NOP everything is good
+        } else {
+            logStream.str("");
+            logStream << "WebSocket connection failed to open.";
+            Log::error(logStream.str());
+            
+
             // Check HTTP response status for successful authentication
             if (response.getStatus() == Poco::Net::HTTPResponse::HTTP_SWITCHING_PROTOCOLS) {
                 logStream.str("");
@@ -61,14 +70,8 @@ void DeepgramWSHelper::initialize(std::string wsEndPoint, const std::map<std::st
                 logStream << "WebSocket connection opened, but authentication failed. HTTP Status Code: " << response.getStatus();
 
                 Log::error(logStream.str());
-                // Handle authentication failure
-                return;
             }
-        } else {
-            logStream.str("");
-            logStream << "WebSocket connection failed to open.";
-            Log::error(logStream.str());
-            // Handle connection failure
+
             return;
         }
 
@@ -79,9 +82,8 @@ void DeepgramWSHelper::initialize(std::string wsEndPoint, const std::map<std::st
         reactorThread.start(*this);
 
         m_psock->setBlocking(false);
-        m_psock->setReceiveTimeout(Poco::Timespan(100, 0));
-        m_psock->setSendTimeout(Poco::Timespan(100, 0));
-        container = new Poco::Buffer<char>(4096);
+        m_psock->setReceiveTimeout(Poco::Timespan(10, 0));
+        m_psock->setSendTimeout(Poco::Timespan(10, 0));
 
     } catch (const Poco::Exception& ex) {
         std::string msg(ex.what());
@@ -119,62 +121,55 @@ void DeepgramWSHelper::send_buffer(char* buffer, unsigned int bufferLen) {
 }
 
 void DeepgramWSHelper::receive_buffer() {
-    static std::string buffer; // Static buffer to persist data between calls
-
     try {
-        const int bufferSize = 256;
-        char readMsg[bufferSize];
+        std::vector<char> readBuffer(2048);
+        std::vector<char> accumulatedData;
+        int bytesRead = 0;  // Declare bytesRead before the do-while loop
 
-        int bytesRead = m_psock->receiveBytes(readMsg, bufferSize);
+        do {
+            // Resize buffer as needed
+            readBuffer.resize(2048);
 
-        if (bytesRead > 0) {
-            // Append the received data to the buffer
-            buffer.append(readMsg, bytesRead);
+            // Read data into the resized vector
+            bytesRead = m_psock->receiveBytes(readBuffer.data(), readBuffer.size());
 
-            size_t transcriptPos = buffer.find("\"transcript\"");
-            while (transcriptPos != std::string::npos) {
-                // Find the start and end of the transcript value
-                size_t start = buffer.find("\"", transcriptPos + 12);
-                size_t end = buffer.find("\"", start + 1);
+            if (bytesRead > 0) {
+                // Append the received data to the accumulated data
+                accumulatedData.insert(accumulatedData.end(), readBuffer.begin(), readBuffer.begin() + bytesRead);
 
-                if (start != std::string::npos && end != std::string::npos) {
-                    // Extract the transcript
-                    std::string transcript = buffer.substr(start + 1, end - start - 1);
-
-                    // Check if the transcript is not blank before printing
-                    if (!transcript.empty()) {
-                        Log::info(transcript);
-                    }
-
-                    // Erase the processed part from the buffer
-                    buffer.erase(0, end + 1);
-                } else {
-                    // If the transcript value is incomplete, break the loop
-                    break;
-                }
-
-                // Search for the next occurrence of "transcript"
-                transcriptPos = buffer.find("\"transcript\"");
             }
-        } else if (bytesRead == 0) {
-            // Connection closed gracefully
-            Log::info("WebSocket connection got nothing back");
+        } while (bytesRead > 0 && bytesRead == readBuffer.size());
+
+        if (!accumulatedData.empty()) {
+            // Log the raw JSON data received
+            std::string receivedData(accumulatedData.begin(), accumulatedData.end());
+
+            try {
+                // Attempt to parse the received data as JSON
+                DeepgramResults result = DeepgramJsonParser::parse(receivedData);
+
+                // Check if the parsed JSON contains alternatives and transcript
+                if (!result.channel.alternatives.empty() && !result.channel.alternatives[0].transcript.empty()) {
+                    // Extract and print the transcript
+                    std::string transcript = result.channel.alternatives[0].transcript;
+                    Log::info("Transcript from JSON: " + transcript);
+                }
+            } catch (const Poco::JSON::JSONException& jsonEx) {
+                // Log the JSON parsing exception
+                Log::error("JSON Parsing Exception: " + jsonEx.message());
+            }
         } else {
-            // Handle error or connection closure
-            Log::error("Error receiving message from WebSocket.");
+            Log::info("WebSocket connection got nothing back");
         }
     } catch (const Poco::Net::WebSocketException& ex) {
-        std::string msg(ex.what());
-        std::stringstream logStream;
-        logStream << "WebSocketException caught: " << msg;
-        Log::error(logStream.str());
+        std::string errorMsg = "WebSocketException caught: " + std::string(ex.displayText());
+        Log::error(errorMsg);
     } catch (const Poco::Exception& ex) {
-        std::string msg(ex.what());
-        std::stringstream logStream;
-        logStream << "Exception: " << msg;
-        Log::error(logStream.str());
+        std::string errorMsg = "Exception: " + std::string(ex.displayText());
+        Log::error(errorMsg);
     }
 }
+
 
 void DeepgramWSHelper::run() {
     runReactor();
@@ -189,5 +184,6 @@ void DeepgramWSHelper::close() {
     } catch (...) {
         std::stringstream logStream;
         logStream << "Closing failed." << std::endl;
+        Log::error(logStream.str());
     }
 }

@@ -34,13 +34,6 @@ RUN apt-get update  \
     # Install Poco dependencies
     libpoco-dev
 
-# Clone and build binn from source
-RUN git clone https://github.com/liteserver/binn \
-    && cd binn \
-    && make \
-    && make install
-    
-
 # Install ALSA
 RUN apt-get install -y libasound2 libasound2-plugins alsa alsa-utils alsa-oss
 

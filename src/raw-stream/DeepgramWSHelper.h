@@ -19,7 +19,7 @@
 
 class DeepgramWSHelper : public Poco::Runnable {
 public:
-    DeepgramWSHelper(); // Default constructor
+    DeepgramWSHelper(); 
     DeepgramWSHelper(std::string wsEndPoint, const std::map<std::string, std::string>& extraHeaders, const std::string& encoding, int sampleRate, int channels);
     ~DeepgramWSHelper();
 
@@ -38,13 +38,11 @@ private:
     Poco::Net::HTTPResponse response;
     Poco::Thread reactorThread;
     Poco::Net::WebSocket* m_psock;
-    Poco::Buffer<char>* container;
     Poco::Net::SocketReactor* reactor;
 
     void runReactor();
     void onSocketReadable(Poco::Net::ReadableNotification* pNf);
 
-    int msgSize = 4096;
     std::stringstream logStream;
 };
 

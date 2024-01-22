@@ -28,7 +28,6 @@ link_directories(${ZOOM_SDK} ${ZOOM_SDK})
 link_directories(${ZOOM_SDK} ${ZOOM_SDK}/qt_libs)
 link_directories(${ZOOM_SDK} ${ZOOM_SDK}/qt_libs/Qt/lib)
 
-include_directories(${Binn_INCLUDE_DIRS})
 include_directories(${Poco_INCLUDE_DIRS})
 
 add_executable(zoomsdk
@@ -36,7 +35,9 @@ add_executable(zoomsdk
     src/Zoom.cpp
     src/Zoom.h
     src/raw-stream/DeepgramWSHelper.cpp  
-    src/raw-stream/DeepgramWSHelper.h    
+    src/raw-stream/DeepgramWSHelper.h
+    src/raw-stream/DeepgramJsonParser.cpp  
+    src/raw-stream/DeepgramJsonParser.h     
     src/Config.cpp
     src/Config.h
     src/util/Singleton.h
