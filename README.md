@@ -2,6 +2,13 @@
 
 My fork of https://github.com/zoom/meetingsdk-headless-linux-sample incorporates modifications to establish a WebSocket connection with Deepgram, enabling the transmission of live audio for transcription. The entire implementation is written in C++. Since Deepgram lacks a dedicated C++ SDK, I had to directly manage the WebSocket communication within my C++ code. This choice was made because the original headless-linux-sample from Zoom was also written in C++, providing a solid foundation for building upon.
 
+
+
+Uploading dzb-zfje-ydy (2024-01-22 15_16 GMT-8).mp4…
+
+
+
+
 ## Prerequisites
 
 1. [Docker](https://www.docker.com/)
